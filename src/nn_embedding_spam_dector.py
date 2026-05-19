@@ -2,18 +2,18 @@ import torch
 import torch.nn as nn
 
 texts = [
-"free money now",
-"win cash prize",
-"claim your reward",
-"limited time offer",
-"special offer today",
-"meeting tomorrow",
-"project update",
-"schedule a call",
-"project status update"
+    "free money now",
+    "win cash prize",
+    "claim your reward",
+    "limited time offer",
+    "special offer today",
+    "meeting tomorrow",
+    "project update",
+    "schedule a call",
+    "project status update"
 ]
 
-labels = [1,1,1,1,1,0,0,0,0]
+labels = [1, 1, 1, 1, 1, 0, 0, 0, 0]
 
 # ---- build vocabulary ----
 
@@ -21,22 +21,24 @@ words = set()
 for t in texts:
     words.update(t.split())
 
-vocab = {w:i+1 for i,w in enumerate(words)}   # 0 reserved for padding
-index_to_word = {i:w for w,i in vocab.items()}
+vocab = {w: i + 1 for i, w in enumerate(words)}  # 0 reserved for padding
+index_to_word = {i: w for w, i in vocab.items()}
+
 
 def encode(text):
     return [vocab[w] for w in text.split()]
+
 
 X = [encode(t) for t in texts]
 max_len = max(len(x) for x in X)
 
 for i in range(len(X)):
-    X[i] = X[i] + [0]*(max_len-len(X[i]))
+    X[i] = X[i] + [0] * (max_len - len(X[i]))
 
 X = torch.tensor(X)
-y = torch.tensor(labels).float().view(-1,1)
+y = torch.tensor(labels).float().view(-1, 1)
 
-vocab_size = len(vocab)+1
+vocab_size = len(vocab) + 1
 
 # ---- model components ----
 
@@ -45,9 +47,9 @@ embedding = nn.Embedding(vocab_size, 8)
 model = nn.Sequential(
     embedding,
     nn.Flatten(),
-    nn.Linear(max_len*8,16),
+    nn.Linear(max_len * 8, 16),
     nn.ReLU(),
-    nn.Linear(16,1),
+    nn.Linear(16, 1),
     nn.Sigmoid()
 )
 
@@ -62,7 +64,7 @@ watch_words = ["offer", "free", "project", "meeting"]
 for epoch in range(300):
 
     pred = model(X)
-    loss = loss_fn(pred,y)
+    loss = loss_fn(pred, y)
 
     optimizer.zero_grad()
     loss.backward()
@@ -79,16 +81,17 @@ for epoch in range(300):
             vec = weights[idx].numpy()
             print(w, vec)
 
+
 # ---- prediction helper ----
 
 def predict(text):
-
     x = encode(text)
-    x = x + [0]*(max_len-len(x))
+    x = x + [0] * (max_len - len(x))
     x = torch.tensor([x])
 
     prob = model(x).item()
     return prob
+
 
 print("\nPredictions")
 print("free cash offer:", predict("free cash offer"))

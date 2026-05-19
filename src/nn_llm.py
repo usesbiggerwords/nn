@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-text = "hello world hello world hello world"
+text = "hello world " * 100
 
 chars = sorted(list(set(text)))
 stoi = {ch:i for i,ch in enumerate(chars)}
@@ -44,23 +44,30 @@ class ToyTransformer(nn.Module):
 
         self.last_attn = None
 
-    def forward(self,x):
+        self.pos_embed = nn.Embedding(seq_len, d_model)
 
-        x = self.embed(x)
+    def forward(self, x):
+        B, T = x.shape
 
-        attn_out,attn_weights = self.attn(x,x,x)
+        tok = self.embed(x)
+
+        positions = torch.arange(T, device=x.device)
+        pos = self.pos_embed(positions)
+
+        x = tok + pos
+
+        attn_out, attn_weights = self.attn(x, x, x)
 
         self.last_attn = attn_weights
 
         x = x + attn_out
-
         x = x + self.ff(x)
 
         return self.lm_head(x)
 
 model = ToyTransformer()
 
-optimizer = optim.Adam(model.parameters(),lr=0.01)
+optimizer = optim.Adam(model.parameters(),lr=0.001)
 
 loss_fn = nn.CrossEntropyLoss()
 
@@ -88,7 +95,7 @@ def generate(start,length=40):
 
     for _ in range(length):
 
-        logits = model(x)
+        logits = model(x[:, -seq_len:])
 
         probs = torch.softmax(logits[0,-1],dim=0)
 
